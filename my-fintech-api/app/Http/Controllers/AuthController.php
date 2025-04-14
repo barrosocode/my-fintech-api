@@ -7,16 +7,32 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
 
+
+
     public function login(Request $request)
     {
+        // Validação manual
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Erro de validação nos dados enviados.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         $credentials = $request->only('email', 'password');
 
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Credenciais inválidas'], 401);
+        if (!auth('web')->attempt($credentials)) {
+            return response()->json(['message' => 'Email ou senha incorretos.'], 401);
         }
 
         $user = Auth::user();
@@ -41,19 +57,32 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => $user,
-            'expires_at' => $expiresAt->toDateTimeString(),
+            'expires_at' => $expiresAt?->toDateTimeString(),
         ]);
     }
 
+
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        if (!$request->user()) {
+            return response()->json(['message' => 'Usuário já está deslogado.'], 401);
+        }
 
-        return response()->json(['message' => 'Logout realizado com sucesso']);
+        try {
+            $request->user()->currentAccessToken()->delete();
+
+            return response()->json(['message' => 'Logout realizado com sucesso!']);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Erro ao realizar logout.'], 500);
+        }
     }
 
     public function me(Request $request)
     {
+        if (!$request->user()) {
+            return response()->json(['message' => 'Não autenticado.'], 401);
+        }
+
         return response()->json($request->user());
     }
 

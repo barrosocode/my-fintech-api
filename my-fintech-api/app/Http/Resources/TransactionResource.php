@@ -21,7 +21,6 @@ class TransactionResource extends JsonResource
             'value' => (float) $this->value,
             'description' => $this->description,
             'date' => $this->date,
-            'balance' => $this->balance->amount
         ];
     }
 }

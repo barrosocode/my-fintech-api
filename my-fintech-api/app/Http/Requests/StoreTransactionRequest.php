@@ -4,8 +4,21 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
 class StoreTransactionRequest extends FormRequest
 {
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'message' => 'Erro de validação nos dados enviados.',
+                'errors' => $validator->errors(),
+            ], 422)
+        );
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,7 +37,7 @@ class StoreTransactionRequest extends FormRequest
         return [
             'type' => 'required|in:entrada,saida',
             'value' => 'required|numeric',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'date' => 'required|date',
         ];
     }
